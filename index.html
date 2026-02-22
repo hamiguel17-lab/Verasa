@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MJ ADMIN V15 - RED SUPREME</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/711/711193.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #ff0000; 
+            --accent: #00ff9d; 
+            --bg: #050505; 
+            --blue: #00d9ff; 
+            --wait: #ffcc00; 
+        }
+        body { margin: 0; font-family: 'Orbitron', sans-serif; background: #000; color: #fff; user-select: none; }
+        
+        /* LOGIN E REGISTRO */
+        #loginScreen { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .login-card { padding: 30px; border: 2px solid var(--primary); text-align: center; box-shadow: 0 0 20px var(--primary); width: 85%; max-width: 350px; background: #000; }
+        .toggle-btn { font-size: 9px; color: var(--blue); cursor: pointer; margin-top: 15px; display: block; }
+
+        /* APP E NAV */
+        #mainApp { display: none; flex-direction: column; min-height: 100vh; }
+        .top-nav { background: #111; display: flex; overflow-x: auto; padding: 15px; border-bottom: 2px solid var(--primary); position: sticky; top: 0; z-index: 100; }
+        .nav-item { padding: 12px 18px; cursor: pointer; border: 1px solid var(--primary); margin-right: 8px; font-size: 9px; white-space: nowrap; color: #fff; }
+        .nav-item.active { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+
+        .main-content { padding: 20px; }
+        .section { display: none; }
+        .section.active { display: block !important; }
+
+        /* CARDS */
+        .card { background: rgba(20,20,25,0.9); padding: 15px; border: 1px solid var(--primary); margin-bottom: 15px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .stat-box { background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #333; text-align: center; }
+        .stat-box small { font-size: 8px; color: #888; display: block; }
+        .stat-value { font-size: 28px; text-shadow: 0 0 15px var(--primary); text-align: center; }
+
+        /* FORMS */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid var(--primary); color: #fff; font-family: 'Orbitron'; font-size: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); border: none; color: #fff; font-weight: bold; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; }
+        
+        /* PALETA DE CORES */
+        .color-picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: left; }
+        .color-item { display: flex; flex-direction: column; gap: 5px; }
+        .color-item label { font-size: 8px; color: #888; }
+        .input-color { height: 40px; padding: 2px; cursor: pointer; border: 1px solid #333; }
+
+        /* LISTAS */
+        .item-list { background: #0a0a0a; padding: 12px; border-left: 3px solid var(--primary); margin-bottom: 10px; border-top: 1px solid #222; }
+        .btn-mini { padding: 6px 2px; font-size: 7px; background: transparent; border: 1px solid var(--primary); color: #fff; cursor: pointer; }
+        .btn-copy { background: #111; border: 1px solid var(--blue); color: var(--blue); font-size: 8px; padding: 4px; margin-top: 5px; width: 100%; cursor: pointer; }
+        
+        /* TABELA USUARIOS */
+        .user-card { border: 1px solid #333; padding: 10px; margin-bottom: 10px; font-size: 10px; background: #050505; }
+        .pending-card { border: 1px solid var(--wait); background: rgba(255, 204, 0, 0.05); }
+        .user-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+
+        .ip-badge { font-size: 8px; background: #222; padding: 2px 5px; border-radius: 4px; color: var(--blue); border: 1px solid var(--blue); }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen">
+        <div class="login-card" id="areaLogin">
+            <h1 style="color:var(--primary); margin:0; font-size: 20px;">MJ ADMIN V15</h1>
+            <p style="font-size:9px; color:#888; margin-bottom:20px;">CONTROLE DE ACESSO</p>
+            <input type="text" id="userInput" placeholder="USUÁRIO">
+            <input type="password" id="passInput" placeholder="SENHA">
+            <button onclick="verificarLogin()">ENTRAR</button>
+            <span class="toggle-btn" onclick="toggleAuth(true)">SOLICITAR ACESSO</span>
+        </div>
+
+        <div class="login-card" id="areaRegistro" style="display:none;">
+            <h1 style="color:var(--accent); margin:0; font-size: 20px;">SOLICITAR CONTA</h1>
+            <p style="font-size:9px; color:#888; margin-bottom:20px;">APENAS SENHA NUMÉRICA (>4)</p>
+            <input type="text" id="regUser" placeholder="USUÁRIO DESEJADO">
+            <input type="password" id="regPass" placeholder="SENHA (SÓ NÚMEROS)">
+            <button style="background:var(--accent); color:#000" onclick="registrar()">ENVIAR SOLICITAÇÃO</button>
+            <span class="toggle-btn" onclick="toggleAuth(false)">VOLTAR AO LOGIN</span>
+        </div>
+    </div>
+
+    <div id="mainApp">
+        <nav class="top-nav">
+            <div class="nav-item active" onclick="trocarAba('dash', this)">DASH</div>
+            <div class="nav-item" onclick="trocarAba('gerar', this)">GERAR</div>
+            <div class="nav-item" onclick="trocarAba('hist', this)">BANCO</div>
+            <div id="abaControles" class="nav-item" style="display:none; border-color:var(--accent)" onclick="trocarAba('masterKeys', this)">CONTROLES</div>
+            <div id="abaContas" class="nav-item" style="display:none; border-color:var(--blue)" onclick="trocarAba('masterUsers', this)">CONTAS</div>
+            <div class="nav-item" onclick="trocarAba('info', this)">INFO</div>
+        </nav>
+
+        <div class="main-content">
+            <div id="dash" class="section active">
+                <div class="card">
+                    <p style="font-size:9px; text-align:center;">SALDO ATUAL</p>
+                    <div id="saldoTxt" class="stat-value">0</div>
+                    <div class="stat-grid">
+                        <div class="stat-box"><small>ATIVAS</small><span id="cAtiva" style="color:var(--accent)">0</span></div>
+                        <div class="stat-box"><small>PAUSADAS</small><span id="cPausa" style="color:var(--blue)">0</span></div>
+                        <div class="stat-box"><small>WAIT</small><span id="cWait" style="color:var(--wait)">0</span></div>
+                        <div class="stat-box"><small>EXP</small><span id="cExp" style="color:var(--primary)">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="gerar" class="section">
+                <div class="card">
+                    <input type="text" id="nomeCli" placeholder="NOME DO CLIENTE">
+                    
+                    <div id="formComum">
+                        <label style="font-size: 8px; color: #888;">TEMPO DE VALIDADE:</label>
+                        <select id="tempoSel">
+                            <option value="10|1">1 DIA - 10c</option>
+                            <option value="50|7">7 DIAS - 50c</option>
+                            <option value="200|30">30 DIAS - 200c</option>
+                            <option value="5000|99999">INFINITO - 5000c</option>
+                        </select>
+
+                        <label style="font-size: 8px; color: #888;">LIMITE DE CONEXÕES (IP):</label>
+                        <select id="ipSel">
+                            <option value="0|1">1 IP - GRÁTIS</option>
+                            <option value="5|2">2 IPS - +5c</option>
+                            <option value="15|5">5 IPS - +15c</option>
+                            <option value="1000|999">ILIMITADO - +1000c</option>
+                        </select>
+                    </div>
+
+                    <div id="formYT" style="display:none; border: 1px dashed var(--accent); padding: 10px; margin: 10px 0; text-align: center;">
+                        <p style="font-size: 10px; color: var(--accent);">GERAR KEY: 1 DIA (ATIVA)</p>
+                    </div>
+
+                    <button onclick="gerarKey()">CRIAR KEY COM LIMITE</button>
+                </div>
+            </div>
+
+            <div id="hist" class="section">
+                <div id="listaMinhas"></div>
+            </div>
+
+            <div id="masterKeys" class="section">
+                <h4 style="text-align:center; font-size:10px; color:var(--accent)">TODAS AS KEYS GERADAS</h4>
+                <div id="listaGeral"></div>
+            </div>
+
+            <div id="masterUsers" class="section">
+                <h4 style="text-align:center; font-size:10px; color:var(--wait)">SOLICITAÇÕES PENDENTES</h4>
+                <div id="listaPendentes"></div>
+                <h4 style="text-align:center; font-size:10px; color:var(--blue); margin-top:20px;">USUÁRIOS ATIVOS</h4>
+                <div id="listaUsuarios"></div>
+            </div>
+
+            <div id="info" class="section">
+                <div class="card" style="text-align:center">
+                    <h4 style="font-size:10px; margin-top:0">CUSTOMIZAÇÃO VISUAL</h4>
+                    <div class="color-picker-grid">
+                        <div class="color-item">
+                            <label>COR PRINCIPAL</label>
+                            <input type="color" id="pickPrimary" class="input-color" value="#ff0000" oninput="mudarCor('--primary', this.value)">
+                        </div>
+                        <div class="color-item">
+                            <label>COR ACENTO</label>
+                            <input type="color" id="pickAccent" class="input-color" value="#00ff9d" oninput="mudarCor('--accent', this.value)">
+                        </div>
+                        <div class="color-item">
+                            <label>COR INFO (AZUL)</label>
+                            <input type="color" id="pickBlue" class="input-color" value="#00d9ff" oninput="mudarCor('--blue', this.value)">
+                        </div>
+                        <div class="color-item">
+                            <label>RESETAR</label>
+                            <button onclick="resetarCores()" style="padding:10px; background:#333; height:40px">PADRÃO</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="text-align:center">
+                    <p style="font-size: 8px; color: #888;">SUPORTE INSTAGRAM:</p>
+                    <a href="https://www.instagram.com/miguel_v_.7?igsh=MXgwb2pycW5obzRsNw==" target="_blank" style="color:var(--accent); text-decoration:none; font-size:10px;">@MIGUEL_V_.7</a>
+                    <hr style="border:0; border-top:1px solid #333; margin: 15px 0;">
+                    <input type="password" id="passMestre" placeholder="SENHA MESTRE">
+                    <button onclick="reporDono()">REPOR 1.000.000 (DONO)</button>
+                    <button onclick="location.reload()" style="margin-top:15px; background:#222">DESCONECTAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('SW Ativo!', reg))
+            .catch(err => console.log('Erro no SW', err));
+        }
+
+        let customCores = JSON.parse(localStorage.getItem('mj_theme')) || { '--primary': '#ff0000', '--accent': '#00ff9d', '--blue': '#00d9ff' };
+        
+        function aplicarTema() {
+            for (let [varName, color] of Object.entries(customCores)) {
+                document.documentElement.style.setProperty(varName, color);
+                const input = document.getElementById('pick' + varName.replace('--', '').charAt(0).toUpperCase() + varName.slice(3));
+                if(input) input.value = color;
+            }
+        }
+
+        function mudarCor(variavel, valor) {
+            document.documentElement.style.setProperty(variavel, valor);
+            customCores[variavel] = valor;
+            localStorage.setItem('mj_theme', JSON.stringify(customCores));
+        }
+
+        function resetarCores() {
+            customCores = { '--primary': '#ff0000', '--accent': '#00ff9d', '--blue': '#00d9ff' };
+            localStorage.setItem('mj_theme', JSON.stringify(customCores));
+            aplicarTema();
+        }
+
+        aplicarTema();
+
+        let contas = JSON.parse(localStorage.getItem('mj_c')) || [];
+        if(!contas.find(x => x.user === "DONO")) contas.push({user:"DONO", pass:"110211", saldo:1000000, ban:0, status: 1});
+        if(!contas.find(x => x.user === "YT")) contas.push({user:"YT", pass:"01", saldo:2000000, ban:0, status: 1});
+        localStorage.setItem('mj_c', JSON.stringify(contas));
+
+        let db = JSON.parse(localStorage.getItem('mj_d')) || [];
+        let userLogado = null;
+
+        function toggleAuth(isReg) {
+            document.getElementById('areaLogin').style.display = isReg ? 'none' : 'block';
+            document.getElementById('areaRegistro').style.display = isReg ? 'block' : 'none';
+        }
+
+        function registrar() {
+            const u = document.getElementById('regUser').value.trim().toUpperCase();
+            const p = document.getElementById('regPass').value.trim();
+            const isNumeric = /^\d+$/.test(p);
+            const isSequence = "0123456789876543210".includes(p);
+            if(!u || !p) return alert("PREENCHA TUDO!");
+            if(!isNumeric) return alert("A SENHA DEVE CONTER APENAS NÚMEROS!");
+            if(p.length <= 4) return alert("A SENHA DEVE TER MAIS DE 4 DÍGITOS!");
+            if(isSequence && p.length > 1) return alert("SENHAS EM SEQUÊNCIA NÃO SÃO PERMITIDAS!");
+            if(contas.find(x => x.user === u)) return alert("ESTE USUÁRIO JÁ EXISTE!");
+            contas.push({ user: u, pass: p, saldo: 5000, ban: 0, status: 0 });
+            localStorage.setItem('mj_c', JSON.stringify(contas));
+            alert("SOLICITAÇÃO ENVIADA!");
+            toggleAuth(false);
+        }
+
+        function verificarLogin() {
+            const u = document.getElementById('userInput').value.trim().toUpperCase();
+            const p = document.getElementById('passInput').value.trim();
+            const conta = contas.find(x => x.user === u && x.pass === p);
+            if(conta) {
+                if(conta.status === 0) return alert("AGUARDANDO APROVAÇÃO!");
+                if(conta.ban > Date.now()) return alert("VOCÊ ESTÁ BANIDO!");
+                userLogado = conta;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                if(u === "YT") {
+                    document.getElementById('formComum').style.display = 'none';
+                    document.getElementById('formYT').style.display = 'block';
+                } else {
+                    document.getElementById('formComum').style.display = 'block';
+                    document.getElementById('formYT').style.display = 'none';
+                }
+                if(u === "DONO") {
+                    document.getElementById('abaControles').style.display = 'block';
+                    document.getElementById('abaContas').style.display = 'block';
+                }
+                aplicarTema();
+                atualizar();
+                setInterval(atualizar, 1000);
+            } else alert("DADOS INCORRETOS!");
+        }
+
+        function atualizar() {
+            document.getElementById('saldoTxt').innerText = userLogado.saldo.toLocaleString();
+            localStorage.setItem('mj_c', JSON.stringify(contas));
+            localStorage.setItem('mj_d', JSON.stringify(db));
+            renderizarKeys();
+            if(userLogado.user === "DONO") renderizarAdmin();
+            const base = userLogado.user === "DONO" ? db : db.filter(x => x.owner === userLogado.user);
+            document.getElementById('cAtiva').innerText = base.filter(x => x.status === 'Ativa').length;
+            document.getElementById('cPausa').innerText = base.filter(x => x.status === 'Pausada').length;
+            document.getElementById('cWait').innerText = base.filter(x => x.status === 'Aguardando').length;
+            document.getElementById('cExp').innerText = base.filter(x => x.status === 'Expirada').length;
+        }
+
+        function gerarKey() {
+            const nomeInput = document.getElementById('nomeCli');
+            const nome = nomeInput.value;
+            let custoTotal, dias, ips, statusKey, validadeKey;
+            if(userLogado.user === "YT") {
+                custoTotal = 10; dias = 1; ips = 1;
+                statusKey = 'Ativa';
+                validadeKey = Date.now() + (1 * 86400000);
+            } else {
+                const [custoT, dT] = document.getElementById('tempoSel').value.split('|');
+                const [custoI, iL] = document.getElementById('ipSel').value.split('|');
+                custoTotal = parseInt(custoT) + parseInt(custoI);
+                dias = dT; ips = iL;
+                statusKey = 'Aguardando'; validadeKey = 0;
+            }
+            if(userLogado.saldo >= custoTotal) {
+                userLogado.saldo -= custoTotal;
+                db.unshift({
+                    key: nome || "MJ-"+Math.floor(Math.random()*9999),
+                    owner: userLogado.user,
+                    status: statusKey,
+                    duracao: dias * 86400000,
+                    validade: validadeKey,
+                    pausadoEm: 0,
+                    limiteIp: ips
+                });
+                nomeInput.value = "";
+                trocarAba('hist', document.querySelectorAll('.nav-item')[2]); 
+            } else alert("SALDO INSUFICIENTE!");
+        }
+
+        function copiarKey(texto, btn) {
+            navigator.clipboard.writeText(texto).then(() => {
+                const original = btn.innerText;
+                btn.innerText = "COPIADO!";
+                btn.style.color = "var(--accent)";
+                setTimeout(() => { btn.innerText = original; btn.style.color = "var(--blue)"; }, 1500);
+            });
+        }
+
+        function cardKeyHTML(k, master = false) {
+            const i = db.indexOf(k);
+            let tempo = "AGUARDANDO";
+            if(k.status === 'Ativa') {
+                const r = k.validade - Date.now();
+                if(r <= 0) { k.status = 'Expirada'; tempo = "EXPIRADA"; }
+                else {
+                    const d = Math.floor(r/86400000);
+                    const h = Math.floor((r%86400000)/3600000);
+                    tempo = `${d}d ${h}h RESTANTE`;
+                }
+            } else if(k.status === 'Pausada') tempo = "PAUSADA";
+            const actionsHTML = (userLogado.user === "YT") ? '' : `
+                <div class="user-actions">
+                    <button class="btn-mini" onclick="acaoKey(${i}, 'pausa')">PAUSE</button>
+                    <button class="btn-mini" style="border-color:var(--accent)" onclick="acaoKey(${i}, 'play')">PLAY</button>
+                    <button class="btn-mini" onclick="acaoKey(${i}, 'mais')">+DIAS</button>
+                    <button class="btn-mini" style="border-color:red" onclick="db.splice(${i},1)">BAN</button>
+                </div>`;
+            return `
+            <div class="item-list">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:9px">
+                    <b>${k.key}</b>
+                    <span class="ip-badge">IP: ${k.limiteIp >= 900 ? '∞' : k.limiteIp}</span>
+                    ${master ? `<span style="color:var(--blue)">@${k.owner}</span>` : `<span>${k.status}</span>`}
+                </div>
+                <div style="text-align:center; margin:5px 0; font-size:10px; color:var(--primary)">${tempo}</div>
+                ${actionsHTML}
+                <button class="btn-copy" onclick="copiarKey('${k.key}', this)">COPIAR KEY</button>
+            </div>`;
+        }
+
+        function renderizarAdmin() {
+            document.getElementById('listaGeral').innerHTML = db.map(k => cardKeyHTML(k, true)).join('');
+            let htmlAtivos = ''; let htmlPendentes = '';
+            contas.forEach((u, i) => {
+                if(u.user === "DONO") return;
+                if(u.status === 0) {
+                    htmlPendentes += `<div class="user-card pending-card"><div style="display:flex; justify-content:space-between"><b>${u.user}</b> <span style="color:var(--wait)">PENDENTE</span></div><div class="user-actions"><button class="btn-mini" style="border-color:var(--accent); grid-column: span 2" onclick="aprovar(${i})">APROVAR</button><button class="btn-mini" style="border-color:var(--primary); grid-column: span 2" onclick="contas.splice(${i},1)">RECUSAR</button></div></div>`;
+                } else {
+                    htmlAtivos += `<div class="user-card"><div style="display:flex; justify-content:space-between"><b>${u.user}</b> <span>${u.saldo.toLocaleString()}c</span></div><div style="font-size:8px; color:#888; margin: 4px 0">SENHA: ${u.pass}</div><div class="user-actions"><button class="btn-mini" onclick="modSaldo(${i}, 500)">+500</button><button class="btn-mini" onclick="modSaldo(${i}, -500)">-500</button><button class="btn-mini" style="border-color:orange" onclick="banir(${i})">BAN</button><button class="btn-mini" style="border-color:red" onclick="contas.splice(${i},1)">DEL</button></div></div>`;
+                }
+            });
+            document.getElementById('listaPendentes').innerHTML = htmlPendentes || "<p style='font-size:8px; text-align:center'>SEM SOLICITAÇÕES</p>";
+            document.getElementById('listaUsuarios').innerHTML = htmlAtivos;
+        }
+
+        function acaoKey(i, ac) {
+            const k = db[i];
+            if(ac === 'play') {
+                if(k.status === 'Aguardando') { k.validade = Date.now() + k.duracao; k.status = 'Ativa'; }
+                else if(k.status === 'Pausada') { k.validade = Date.now() + k.pausadoEm; k.status = 'Ativa'; }
+            } else if(ac === 'pausa') {
+                if(k.status === 'Ativa') { k.pausadoEm = k.validade - Date.now(); k.status = 'Pausada'; }
+            } else if(ac === 'mais') {
+                const d = prompt("Dias:");
+                if(d) k.status === 'Ativa' ? k.validade += d*86400000 : k.duracao += d*86400000;
+            }
+            atualizar();
+        }
+
+        function aprovar(i) { contas[i].status = 1; atualizar(); }
+        function modSaldo(i, v) { contas[i].saldo += v; atualizar(); }
+        function banir(i) { const d = prompt("Dias:"); if(d) contas[i].ban = Date.now() + (d * 86400000); atualizar(); }
+        
+        function renderizarKeys() {
+            const container = document.getElementById('listaMinhas');
+            const minhas = db.filter(x => x.owner === userLogado.user);
+            container.innerHTML = minhas.map(k => cardKeyHTML(k)).join('');
+        }
+
+        function reporDono() { 
+            if(document.getElementById('passMestre').value === "244") { 
+                userLogado.saldo += 1000000; 
+                document.getElementById('passMestre').value = "";
+            } 
+        }
+
+        function trocarAba(id, btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(btn) btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
